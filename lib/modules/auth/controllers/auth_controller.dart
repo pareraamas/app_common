@@ -1,12 +1,13 @@
+import 'package:app_common/config_core.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import '../../../../../domain/usecases/auth/login_usecase.dart';
-import '../../../../../domain/usecases/auth/register_usecase.dart';
-import '../../../../../domain/usecases/auth/verify_otp_usecase.dart';
-import '../../../../../domain/usecases/auth/forgot_password_usecase.dart';
-import '../../../../../domain/usecases/auth/verify_reset_otp_usecase.dart';
-import '../../../../../domain/usecases/auth/reset_password_usecase.dart';
-import '../../../routes/app_pages.dart';
+import '../domain/usecases/auth/login_usecase.dart';
+import '../domain/usecases/auth/register_usecase.dart';
+import '../domain/usecases/auth/verify_otp_usecase.dart';
+import '../domain/usecases/auth/forgot_password_usecase.dart';
+import '../domain/usecases/auth/verify_reset_otp_usecase.dart';
+import '../domain/usecases/auth/reset_password_usecase.dart';
+import '../../../routes/config_pages.dart';
 import '../views/verify_otp_view.dart';
 import '../views/reset_password_view.dart';
 import '../views/verify_reset_otp_view.dart';
@@ -26,12 +27,12 @@ class AuthController extends GetxController {
     required ForgotPasswordUseCase forgotPasswordUseCase,
     required VerifyResetOtpUseCase verifyResetOtpUseCase,
     required ResetPasswordUseCase resetPasswordUseCase,
-  })  : _loginUseCase = loginUseCase,
-        _registerUseCase = registerUseCase,
-        _verifyOtpUseCase = verifyOtpUseCase,
-        _forgotPasswordUseCase = forgotPasswordUseCase,
-        _verifyResetOtpUseCase = verifyResetOtpUseCase,
-        _resetPasswordUseCase = resetPasswordUseCase;
+  }) : _loginUseCase = loginUseCase,
+       _registerUseCase = registerUseCase,
+       _verifyOtpUseCase = verifyOtpUseCase,
+       _forgotPasswordUseCase = forgotPasswordUseCase,
+       _verifyResetOtpUseCase = verifyResetOtpUseCase,
+       _resetPasswordUseCase = resetPasswordUseCase;
 
   // State
   bool isLoading = false;
@@ -144,7 +145,7 @@ class AuthController extends GetxController {
       },
       (success) {
         isLoading = false;
-        Get.offAllNamed(Routes.HOME); // Navigate to Home and clear stack
+        Get.offAllNamed(ConfigCore.homeRoute); // Navigate to Home and clear stack
       },
     );
   }
@@ -238,14 +239,14 @@ class AuthController extends GetxController {
         Get.snackbar('Sukses', message);
         update();
         // Back to Login
-        Get.offAllNamed(Routes.LOGIN);
+        Get.offAllNamed(ConfigRoutes.LOGIN);
       },
     );
   }
 
   void loginOffline() {
     // Bypass authentication for offline testing
-    Get.offAllNamed(Routes.HOME);
+    Get.offAllNamed(ConfigCore.homeRoute);
     Get.snackbar('Mode Offline', 'Masuk sebagai Guest (Offline Mode)');
   }
 }
