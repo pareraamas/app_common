@@ -1,30 +1,27 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:get/get.dart' hide Response;
 import 'package:pretty_dio_logger/pretty_dio_logger.dart';
 import '../../config/config_core.dart';
 import '../storage/auth_session.dart';
 import '../../core/error/failures.dart';
+import '../../routes/config_pages.dart';
 
 /// Standard Enterprise API Client using Dio.
 /// Supports interceptors, custom error handling, and robust logging.
 class ApiClient {
   late final Dio _dio;
   final IAuthSession _authSession;
+  static bool _isRedirectingToLogin = false;
+  static const _requiresAuthKey = 'requiresAuth';
 
-  ApiClient({
-    String? baseUrl,
-    required IAuthSession authSession,
-    List<Interceptor>? additionalInterceptors,
-  }) : _authSession = authSession {
+  ApiClient({String? baseUrl, required IAuthSession authSession, List<Interceptor>? additionalInterceptors}) : _authSession = authSession {
     _dio = Dio(
       BaseOptions(
         baseUrl: baseUrl ?? ConfigCore.apiBaseUrl,
         connectTimeout: Duration(seconds: ConfigCore.requestTimeout),
         receiveTimeout: Duration(seconds: ConfigCore.receiveTimeout),
-        headers: {
-          'Accept': 'application/json',
-          'X-Client-ID': ConfigCore.xClientID,
-        },
+        headers: {'Accept': 'application/json', 'X-Client-ID': ConfigCore.xClientID},
       ),
     );
 
@@ -35,9 +32,20 @@ class ApiClient {
     // 1. Auth Interceptor
     _dio.interceptors.add(
       InterceptorsWrapper(
-        onRequest: (options, handler) {
+        onRequest: (options, handler) async {
           final token = _authSession.accessToken.value;
           final deviceId = _authSession.deviceId.value;
+          final requiresAuth = (options.extra[_requiresAuthKey] as bool?) ?? true;
+
+          if (requiresAuth && token.isEmpty) {
+            await _authSession.clearSession();
+            if (!_isRedirectingToLogin && Get.currentRoute != ConfigRoutes.LOGIN) {
+              _isRedirectingToLogin = true;
+              await Get.offAllNamed(ConfigRoutes.LOGIN);
+              _isRedirectingToLogin = false;
+            }
+            return handler.reject(DioException(requestOptions: options, type: DioExceptionType.unknown, error: 'Missing authorization header'));
+          }
 
           if (token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
@@ -51,6 +59,11 @@ class ApiClient {
           // Global Error Handling (e.g., 401 Unauthorized)
           if (e.response?.statusCode == 401) {
             await _authSession.clearSession();
+            if (!_isRedirectingToLogin && Get.currentRoute != ConfigRoutes.LOGIN) {
+              _isRedirectingToLogin = true;
+              await Get.offAllNamed(ConfigRoutes.LOGIN);
+              _isRedirectingToLogin = false;
+            }
           }
           return handler.next(e);
         },
@@ -60,15 +73,7 @@ class ApiClient {
     // 2. Logging Interceptor
     if (kDebugMode) {
       _dio.interceptors.add(
-        PrettyDioLogger(
-          requestHeader: true,
-          requestBody: true,
-          responseBody: true,
-          responseHeader: false,
-          error: true,
-          compact: true,
-          maxWidth: 90,
-        ),
+        PrettyDioLogger(requestHeader: true, requestBody: true, responseBody: true, responseHeader: false, error: true, compact: true, maxWidth: 90),
       );
     }
 
@@ -80,79 +85,33 @@ class ApiClient {
 
   // --- API Methods ---
 
-  Future<Response<T>> get<T>(
-    String path, {
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-    CancelToken? cancelToken,
-  }) async {
+  Future<Response<T>> get<T>(String path, {Map<String, dynamic>? queryParameters, Options? options, CancelToken? cancelToken}) async {
     try {
-      return await _dio.get<T>(
-        path,
-        queryParameters: queryParameters,
-        options: options,
-        cancelToken: cancelToken,
-      );
+      return await _dio.get<T>(path, queryParameters: queryParameters, options: options, cancelToken: cancelToken);
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
   }
 
-  Future<Response<T>> post<T>(
-    String path, {
-    dynamic data,
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-    CancelToken? cancelToken,
-  }) async {
+  Future<Response<T>> post<T>(String path, {dynamic data, Map<String, dynamic>? queryParameters, Options? options, CancelToken? cancelToken}) async {
     try {
-      return await _dio.post<T>(
-        path,
-        data: data,
-        queryParameters: queryParameters,
-        options: options,
-        cancelToken: cancelToken,
-      );
+      return await _dio.post<T>(path, data: data, queryParameters: queryParameters, options: options, cancelToken: cancelToken);
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
   }
 
-  Future<Response<T>> put<T>(
-    String path, {
-    dynamic data,
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-    CancelToken? cancelToken,
-  }) async {
+  Future<Response<T>> put<T>(String path, {dynamic data, Map<String, dynamic>? queryParameters, Options? options, CancelToken? cancelToken}) async {
     try {
-      return await _dio.put<T>(
-        path,
-        data: data,
-        queryParameters: queryParameters,
-        options: options,
-        cancelToken: cancelToken,
-      );
+      return await _dio.put<T>(path, data: data, queryParameters: queryParameters, options: options, cancelToken: cancelToken);
     } on DioException catch (e) {
       throw _handleDioError(e);
     }
   }
 
-  Future<Response<T>> delete<T>(
-    String path, {
-    dynamic data,
-    Map<String, dynamic>? queryParameters,
-    Options? options,
-    CancelToken? cancelToken,
-  }) async {
+  Future<Response<T>> delete<T>(String path, {dynamic data, Map<String, dynamic>? queryParameters, Options? options, CancelToken? cancelToken}) async {
     try {
-      return await _dio.delete<T>(
-        path,
-        data: data,
-        queryParameters: queryParameters,
-        options: options,
-        cancelToken: cancelToken,
-      );
+      return await _dio.delete<T>(path, data: data, queryParameters: queryParameters, options: options, cancelToken: cancelToken);
     } on DioException catch (e) {
       throw _handleDioError(e);
     }

@@ -76,6 +76,17 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Result<Map<String, dynamic>> getMe() async {
+    try {
+      final data = await _dataSource.getMe();
+      return Right(data);
+    } catch (e) {
+      if (e is Failure) return Left(e);
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
   Future<bool> isLoggedIn() async {
     return _session.isLoggedIn.value;
   }

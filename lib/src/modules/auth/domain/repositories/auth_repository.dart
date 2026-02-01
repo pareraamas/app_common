@@ -7,6 +7,7 @@ abstract class AuthRepository {
   Result<String> verifyResetOtp(String email, String otp);
   Result<String> resetPassword(String email, String resetToken, String newPassword);
   Result<void> verifyOtp(String email, String otp);
+  Result<Map<String, dynamic>> getMe();
   Future<bool> isLoggedIn();
   Future<void> logout();
 }
